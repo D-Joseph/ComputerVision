@@ -14,43 +14,48 @@ def image_manipulation(image):
     image = image.view(1, image.shape[0]*image.shape[1]).type(torch.FloatTensor) # Convert 2D image to 1D (1x(28*28))
     return image
 
+def output_plots(imgs, filename="Output Image"):
+    """ Create dynamically sized plots for varying len(imgs). """
+    f = plt.figure()
+    for idx, img in enumerate(imgs):
+        f.add_subplot(1,len(imgs), idx + 1)
+        plt.imshow(img.view(28, 28), cmap='gray') # Reconstruct image to 28x28
+    filename = 'outputs/' + filename
+    plt.savefig(filename)
+    print(f'Saved Image to "{filename}"')
+    plt.show()
+
 def index_test(idx, dataset, model, device):
     """ Test the autoencoder on a given MNIST image. """
     img = image_manipulation(dataset.data[idx]).to(device=device)
     img.to(device=device)
     with torch.no_grad():
         output = model(img)
-
-    # Display original and reconstruction in plot
-    f = plt.figure()
-    f.add_subplot(1,2,1)
-    plt.imshow(img.view(28, 28), cmap='gray') # Reconstruct image to 28x28
-    f.add_subplot(1,2,2)
-    plt.imshow(output.view(28, 28), cmap='gray')
-    filename = f'./outputs/Autoencoder Test - Index {idx}.png'
-    plt.savefig(filename)
-    print(f'Saved autoencoder test to "{filename}"')
-    plt.show()
+    output_plots([img, output], filename=f'Autoencoding - Index {idx}.png')
 
 def add_noise(idx, dataset, model, device):
+    """ Add uniformly distributed noise to the images and test the autoencoder. """
     orig = image_manipulation(dataset.data[idx]).to(device=device)
     orig.to(device=device)
     noisy = orig + (torch.rand(orig.size()))
     with torch.no_grad():
         output = model(noisy)
+    output_plots([orig, noisy, output], filename=f'Denoising - Index {idx}.png', )
+
+def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
+    img1 = image_manipulation(dataset.data[i1]).to(device=device)
+    img2 = image_manipulation(dataset.data[i2]).to(device=device)
+    interpols = [img1]
+    with torch.no_grad():
+        enc1 = model.encode(img1)
+        enc2 = model.encode(img2)
+        for i in range(1, num_steps + 1):
+            interpolation = enc1 *(1 - (i/num_steps)) + enc2 * (i/num_steps)
+            output = model.decode(interpolation)
+            interpols.append(output)
+    interpols.append(img2)
+    output_plots(interpols, filename=f'Interpolating - Indexes {i1} and {i2}.png')
     
-    
-    f = plt.figure()
-    f.add_subplot(1, 3, 1)
-    plt.imshow(orig.view(28, 28).cpu(), cmap='gray')  # Noisy image
-    f.add_subplot(1, 3, 2)
-    plt.imshow(noisy.view(28, 28).cpu(), cmap='gray')  # Reconstructed image
-    f.add_subplot(1, 3, 3)
-    plt.imshow(output.view(28, 28).cpu(), cmap='gray')  # Reconstructed image
-    filename = f'./outputs/Denoising Test - Index {idx}.png'
-    plt.savefig(filename)
-    print(f'Saved denoising test to "{filename}"')
-    plt.show()
 
 
 def main():
@@ -73,14 +78,16 @@ def main():
     # Convert MNIST images to Tensors
     test_transform = transforms.Compose([transforms.ToTensor()])
     test_dataset = MNIST('./data/mnist', train=False, download=True, transform=test_transform)
-    
 
-    idx = 0 
-    while idx >= 0:
+    while True:
         idx = int(input("Test the autoencoder. Select an index: "))
         if 0 <= idx < len(test_dataset):
             index_test(idx, test_dataset, model, device)
             add_noise(idx, test_dataset, model, device)
+            idx2 = -1
+            while not (0 <= idx2 < len(test_dataset)):
+                  idx2 = int(input(f"Select another index for linear interpolation (max {len(test_dataset)} -1): "))
+            linear_interpolation(idx, idx2, test_dataset, model, device) 
         else:
             print(f"Index out of range. Max = {len(test_dataset) - 1}")
 
