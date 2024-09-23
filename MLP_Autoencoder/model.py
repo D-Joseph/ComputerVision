@@ -10,10 +10,11 @@ class autoencoderMLP4Layer(nn.Module):
 	def __init__(self, N_input=784, N_bottleneck=8, N_output=784):
 		""" Initialize the layers of the neural network. """
 		super().__init__()
-		self.fc1 = nn.Linear(N_input, 392)
-		self.fc2 = nn.Linear(392, N_bottleneck)
-		self.fc3 = nn.Linear(N_bottleneck, 392)
-		self.fc4 = nn.Linear(392, N_output)
+		half_input = N_input // 2
+		self.fc1 = nn.Linear(N_input, half_input)
+		self.fc2 = nn.Linear(half_input, N_bottleneck)
+		self.fc3 = nn.Linear(N_bottleneck, half_input)
+		self.fc4 = nn.Linear(half_input, N_output)
 		self.type = "MLP4"
 		self.input_shape = (1, 28*28)
 
