@@ -42,6 +42,7 @@ def add_noise(idx, dataset, model, device):
     output_plots([orig, noisy, output], filename=f'Denoising - Index {idx}.png', )
 
 def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
+    """ In steps, merge the autoencoding output of 2 images together. """
     img1 = image_manipulation(dataset.data[i1]).to(device=device)
     img2 = image_manipulation(dataset.data[i2]).to(device=device)
     interpols = [img1]
@@ -49,6 +50,7 @@ def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
         enc1 = model.encode(img1)
         enc2 = model.encode(img2)
         for i in range(1, num_steps + 1):
+            # The encoding weight should go from the first image to the second image in uniform steps
             interpolation = enc1 *(1 - (i/num_steps)) + enc2 * (i/num_steps)
             output = model.decode(interpolation)
             interpols.append(output)
