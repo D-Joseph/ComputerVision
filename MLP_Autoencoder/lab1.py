@@ -13,11 +13,11 @@ def image_manipulation(image):
     image = image.view(1, image.shape[0]*image.shape[1]).type(torch.FloatTensor) # Convert 2D image to 1D (1x(28*28))
     return image
 
-def output_plots(imgs, filename="Output Image"):
+def output_plots(*imgs, filename="Output Image"):
     """ Create dynamically sized plots for varying len(imgs). """
     f = plt.figure()
     for idx, img in enumerate(imgs):
-        f.add_subplot(1,len(imgs), idx + 1)
+        f.add_subplot(1, len(imgs), idx + 1)
         plt.imshow(img.view(28, 28), cmap='gray') # Reconstruct image to 28x28
     filename = 'outputs/' + filename
     plt.savefig(filename)
@@ -30,16 +30,16 @@ def index_test(idx, dataset, model, device):
     img.to(device=device)
     with torch.no_grad():
         output = model(img)
-    output_plots([img, output], filename=f'Autoencoding - Index {idx}.png')
+    output_plots(img, output, filename=f'Autoencoding - Index {idx}.png')
 
-def add_noise(idx, dataset, model, device):
+def add_noise(idx, dataset, model, device, intensity):
     """ Add uniformly distributed noise to the images and test the autoencoder. """
     orig = image_manipulation(dataset.data[idx]).to(device=device)
     orig.to(device=device)
-    noisy = orig + (torch.rand(orig.size()))
+    noisy = orig + (torch.rand(orig.size()) * (intensity / 100))
     with torch.no_grad():
         output = model(noisy)
-    output_plots([orig, noisy, output], filename=f'Denoising - Index {idx}.png', )
+    output_plots(orig, noisy, output, filename=f'Denoising - Index {idx}.png', )
 
 def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
     """ In steps, merge the autoencoding output of 2 images together. """
@@ -51,11 +51,11 @@ def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
         enc2 = model.encode(img2)
         for i in range(1, num_steps + 1):
             # The encoding weight should go from the first image to the second image in uniform steps
-            interpolation = enc1 *(1 - (i/num_steps)) + enc2 * (i/num_steps)
+            interpolation = enc1 * (1 - (i/num_steps)) + enc2 * (i/num_steps)
             output = model.decode(interpolation)
             interpols.append(output)
     interpols.append(img2)
-    output_plots(interpols, filename=f'Interpolating - Indexes {i1} and {i2}.png')
+    output_plots(*interpols, filename=f'Interpolating - Indexes {i1} and {i2}.png')
 
 def main():
     # Command line argument for specifying path to parameters
@@ -82,7 +82,10 @@ def main():
         idx = int(input("Test the autoencoder. Select an index: "))
         if 0 <= idx < len(test_dataset):
             index_test(idx, test_dataset, model, device)
-            add_noise(idx, test_dataset, model, device)
+            intensity = int(input('Select a noise intensity [0, 100]: '))
+            while intensity < 0 or intensity > 100:
+                intensity = int(input('Enter a valid value between 0 and 100: '))
+            add_noise(idx, test_dataset, model, device, intensity)
             idx2 = -1
             while not (0 <= idx2 < len(test_dataset)):
                   idx2 = int(input(f"Select another index for linear interpolation (max {len(test_dataset)} -1): "))
