@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import argparse
 
-
 def image_manipulation(image):
     """ Normalize and flatten the image. """
     image = image.type(torch.float32) 
@@ -55,8 +54,6 @@ def linear_interpolation(i1, i2, dataset, model, device, num_steps=8):
             interpols.append(output)
     interpols.append(img2)
     output_plots(interpols, filename=f'Interpolating - Indexes {i1} and {i2}.png')
-    
-
 
 def main():
     # Command line argument for specifying path to parameters
@@ -90,7 +87,6 @@ def main():
             linear_interpolation(idx, idx2, test_dataset, model, device) 
         else:
             print(f"Index out of range. Max = {len(test_dataset) - 1}")
-
 
 if __name__ == "__main__":
     main() 
