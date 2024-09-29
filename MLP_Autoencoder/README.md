@@ -10,11 +10,10 @@ Decoder:
 - FC Layer 3: 8 -> 392 (ReLU activation)
 - FC Layer 4 (Output): 392 -> 784 (Sigmoid activation)
 
-
-
 The model compresses the input image into a small bottleneck representation and then reconstructs it to its original size. ReLU activation introduces non-linearity, while the final sigmoid function models pixel intensity in the reconstructed image.
-Show Image
-Figure 1: Diagrammatic representation of the developed model
+
+![](https://github.com/D-Joseph/ComputerVision/blob/4ae985a10ac647ad51f680d95ba4888da52ab5aa/MLP_Autoencoder/outputs/model.jpeg)
+
 # Training Details
 The MLP autoencoder was trained using PyTorch with the following specifications:
 - Dataset: MNIST training set
