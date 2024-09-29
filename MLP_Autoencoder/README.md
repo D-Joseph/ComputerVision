@@ -48,7 +48,7 @@ The loss plot indicates successful training without over or underfitting, showin
 # Usage
 Required libraries can be downloaded using `pip install -r requirements.txt`
 
-The lab1.py script provides the following functionalities:
+The test.py script provides the following functionalities:
 1. Autoencoding: Reconstruct a selected MNIST image
 2. Image Denoising: Add Gaussian noise to an image and attempt reconstruction
 3. Bottleneck Interpolation: Linearly interpolate between two encoded representations
