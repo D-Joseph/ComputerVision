@@ -29,7 +29,7 @@ The MLP autoencoder was trained using PyTorch with the following specifications:
 
 # Results
 ## Autoencoding
-The model demonstrates good reconstruction capabilities, generally maintaining the correct discernible shape of the input digits with varying levels of haziness.
+The model demonstrates good reconstruction capabilities, generally maintaining the correct discernible shape of the input digits with varying levels of haziness. <br>
 ![](https://github.com/D-Joseph/ComputerVision/blob/71eb3457a0be09eed5355743003f107156b60997/MLP_Autoencoder/outputs/Autoencoding%20-%20Index%20874.png)
 
 ## Image Denoising
