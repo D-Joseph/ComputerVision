@@ -3,7 +3,7 @@ import pandas as pd
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
+import torch
 
 class SnoutDataset(Dataset):
     def __init__(self, images_dir, labels_file, data_transform=False, label_transform=False):
@@ -15,7 +15,7 @@ class SnoutDataset(Dataset):
     def __len__(self):
         return len(self.labels)
     
-    def default_transformation(self, img, lbl):
+    def default_transformation(self, img, lbl, verbose=False):
         """ Resize all images to 227 x 227. """
 
         # lbl is a string, separate into values
@@ -23,7 +23,7 @@ class SnoutDataset(Dataset):
         old_x = int(lbl[1:comma])
         old_y = int(lbl[comma+1:-1])
         
-        print(f"Old Dimensions: {(img.shape[2], img.shape[1])}, Old Label: {(old_x, old_y)} - {lbl}")
+        # print(f"Old Dimensions: {(img.shape[2], img.shape[1])}, Old Label: {(old_x, old_y)}")
 
         # Calculate new coords based on uniform resizing ratio
         new_x = int(old_x * 227 / img.shape[2])
@@ -32,7 +32,8 @@ class SnoutDataset(Dataset):
             transforms.Resize((227, 227))
         ])(img)
 
-        print(f"New Dimensions: {(img.shape[2], img.shape[1])}, New Label: {(new_x, new_y)}")
+        img = img.type(torch.float32) 
+        img = img / 255.0 # Normalize tensor values
 
         return img, (new_x, new_y)
 
@@ -40,12 +41,20 @@ class SnoutDataset(Dataset):
         """ Get an image and label and transform as necessary. """
         print(self.labels.iloc[idx, 0])
         img_path = os.path.join(self.images, self.labels.iloc[idx, 0])
-        image, label = self.default_transformation(read_image(img_path), self.labels.iloc[idx, 1])
+        img = read_image(img_path)
+
+        # Handle images that are not 3 channel
+        if img.shape[0] == 1:  
+            img = img.repeat(3, 1, 1)  
+        elif img.shape[0] == 4:  
+            img = img[:3, :, :] 
+
+        img, label = self.default_transformation(img, self.labels.iloc[idx, 1])
         if self.data_transform:
-            image = self.img_transform(image)
+            img = self.img_transform(img)
         if self.label_transform:
             label = self.lbl_transform(label)
-        return image, label
+        return img, torch.Tensor(label)
 
     def img_transform(self, img):
         return img

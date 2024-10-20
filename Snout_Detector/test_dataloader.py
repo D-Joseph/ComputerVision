@@ -12,7 +12,6 @@ train_dataloader = DataLoader(
 train_features, train_labels = next(iter(train_dataloader))
 img = train_features[0].permute(1, 2, 0).numpy() 
 label = [train_labels[0][0], train_labels[1][0]]
-
 plt.imshow(img)
 plt.scatter([label[0]], [label[1]], color='red', marker='x') 
 plt.savefig('resized_image.png')
