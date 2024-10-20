@@ -8,6 +8,7 @@ import argparse
 from model import SnoutNet
 from torch.utils.data import DataLoader
 from torchsummary import summary
+from typing import Optional
 
 #   some default parameters, which can be overwritten by command line arguments
 save_file = 'weights.pth'
@@ -16,17 +17,19 @@ batch_size = 256
 bottleneck_size = 32
 plot_file = 'plot.png'
 
-def train(epochs=30, **kwargs):
-    """ Train the model.
+def train(epochs: Optional[int] = 30, **kwargs) -> None:
+    """
+    Train the model.
 
-    kwargs:
-    - model
-    - epochs
-    - loader
-    - device
-    - fn_loss
-    - optimizer
-    - scheduler
+    Args:
+        epochs (Optional[int]): The number of epochs for training. Default is 30.
+        kwargs: 
+            - model: The model to be trained.
+            - loader: The data loader for training data.
+            - device: The device to train on ('cpu' or 'cuda').
+            - fn_loss: The loss function.
+            - optimizer: The optimizer to use for training.
+            - scheduler: The learning rate scheduler.
     """
     print("Training Parameters")
     for kwarg in kwargs:
@@ -37,7 +40,7 @@ def train(epochs=30, **kwargs):
 
     losses_train = []
     for epoch in range(epochs):
-        print(f"**********\n\nEpoch: {epoch}\n\n**********")
+        print(f"Epoch: {epoch}")
         loss_train = 0.0
         for data in kwargs['loader']:
             imgs, lbls = data
@@ -56,8 +59,8 @@ def train(epochs=30, **kwargs):
         print('{} Epoch {}, Training loss {}'.format(
             datetime.datetime.now(), epoch, loss_train/len(kwargs['loader'])))
 
-        print('Saving Weights to ./outputs/weights.pth')
-        torch.save(model.state_dict(), './outputs/weights.pth')
+        print('Saving Weights to ./weights.pth')
+        torch.save(model.state_dict(), './weights.pth')
 
         plt.figure(2, figsize=(12, 7))
         plt.clf()
@@ -65,11 +68,12 @@ def train(epochs=30, **kwargs):
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend(loc=1)
-        print('Saving Loss Plot to ./outputs/loss_plot.png')
+        print('Saving to Loss Plot at ./outputs/loss_plot.png')
         plt.savefig('./outputs/loss_plot.png')
+        return
 
 def init_weights(m):
-    if type(m) == nn.Linear:
+    if type(m) == nn.Linear or type(m) == nn.Conv2d:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
 

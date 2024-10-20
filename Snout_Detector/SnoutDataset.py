@@ -4,9 +4,10 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 import torchvision.transforms as transforms
 import torch
+from typing import Optional, Tuple
 
 class SnoutDataset(Dataset):
-    def __init__(self, images_dir, labels_file, data_transform=False, label_transform=False):
+    def __init__(self, images_dir: str, labels_file: str, data_transform: Optional[str] = None, label_transform: Optional[str] = None) -> None:
         self.labels = pd.read_csv(labels_file)
         self.images = images_dir
         self.data_transform = data_transform
@@ -15,7 +16,7 @@ class SnoutDataset(Dataset):
     def __len__(self):
         return len(self.labels)
     
-    def default_transformation(self, img, lbl, verbose=False):
+    def default_transformation(self, img: torch.Tensor, lbl: str) -> Tuple[torch.Tensor, Tuple[int, int]]:
         """ Resize all images to 227 x 227. """
 
         # lbl is a string, separate into values
@@ -37,9 +38,9 @@ class SnoutDataset(Dataset):
 
         return img, (new_x, new_y)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """ Get an image and label and transform as necessary. """
-        print(self.labels.iloc[idx, 0])
+        # print(self.labels.iloc[idx, 0])
         img_path = os.path.join(self.images, self.labels.iloc[idx, 0])
         img = read_image(img_path)
 
