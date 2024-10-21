@@ -79,12 +79,11 @@ def main():
     argParser.add_argument('-t', metavar='transformation', type=str, help='One of f, r, or fr to expand dataset through a flip, rotation, or both.')
     args = argParser.parse_args()
     transformation = []
-    if args.t.find('f') > -1:
+    if args.t and args.t.find('f') > -1:
         transformation.append('flip')
-    if args.t.find('r') > -1:
+    if args.t and args.t.find('r') > -1:
         transformation.append('rotate')
     
-
     device = 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
