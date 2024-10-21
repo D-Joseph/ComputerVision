@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import os
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from SnoutDataset import SnoutDataset
@@ -9,13 +10,6 @@ from model import SnoutNet
 from torch.utils.data import DataLoader
 from torchsummary import summary
 from typing import Optional
-
-#   some default parameters, which can be overwritten by command line arguments
-save_file = 'weights.pth'
-n_epochs = 30
-batch_size = 256
-bottleneck_size = 32
-plot_file = 'plot.png'
 
 def train(epochs: Optional[int] = 30, **kwargs) -> None:
     """
@@ -37,7 +31,7 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
     model = kwargs['model']
     
     model.train()
-
+    os.makedirs('./outputs', exist_ok=True)
     losses_train = []
     for epoch in range(epochs):
         print(f"Epoch: {epoch}")
@@ -78,6 +72,18 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 def main():
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument('-t', metavar='transformation', type=str, help='One of f, r, or fr to expand dataset through a flip, rotation, or both.')
+    args = argParser.parse_args()
+    
+    transformation = []
+    if args.t.find('f') > -1:
+        transformation.append('flip')
+    if args.t.find('r') > -1:
+        transformation.append('rotate')
+    
+    print(transformation)
+
     device = 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
@@ -87,9 +93,9 @@ def main():
     model.to(device)
     model.apply(init_weights)
     summary(model, model.input_shape)
-
+    print(args.t)
     dataloader = DataLoader(
-        SnoutDataset('./oxford-iiit-pet-noses/images-original/images', './oxford-iiit-pet-noses/train_noses.txt'),
+        SnoutDataset('./oxford-iiit-pet-noses/images-original/images', './oxford-iiit-pet-noses/train_noses.txt', transform=args.t),
         batch_size=64, 
         shuffle=True
     )
