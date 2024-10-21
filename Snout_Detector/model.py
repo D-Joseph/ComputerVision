@@ -27,7 +27,6 @@ class SnoutNet(nn.Module):
         X = F.relu(X)
         X = self.mp(X)
         # print("Shape After Layer 2:", X.shape)
-
         X = self.conv3(X)
         X = F.relu(X)
         X = self.mp(X)

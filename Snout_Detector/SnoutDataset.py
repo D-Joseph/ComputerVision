@@ -16,7 +16,7 @@ class SnoutDataset(Dataset):
         return len(self.labels) * 2 if self.transform else len(self.labels)
     
     def default_transformation(self, img: torch.Tensor, lbl: str) -> Tuple[torch.Tensor, Tuple[int, int]]:
-        """ Resize all images to 227 x 227 and convert tuple to . """
+        """ Resize all images to 227 x 227 and convert tuple to int from str. """
 
         # lbl is a string, separate into values
         comma = lbl.find(',')
@@ -41,7 +41,7 @@ class SnoutDataset(Dataset):
         """ Get an image and label and transform as necessary. """
         # To handle augmentation, we will first add the original images into the dataset, and then wrap around for each augmentation
         true_idx = idx % len(self.labels)
-        print(idx, self.labels.iloc[true_idx, 0])
+        # print(idx, self.labels.iloc[true_idx, 0])
         img_path = os.path.join(self.images, self.labels.iloc[true_idx, 0])
         img = read_image(img_path)
 
@@ -52,11 +52,13 @@ class SnoutDataset(Dataset):
             img = img[:3, :, :] 
 
         img, label = self.default_transformation(img, self.labels.iloc[true_idx, 1])
-        print(f"Resized Dimensions: {(img.shape[2], img.shape[1])}, Resized Label: {(label[0], label[1])}")
+        # print(f"Resized Dimensions: {(img.shape[2], img.shape[1])}, Resized Label: {(label[0], label[1])}")
+
         # Second half of indices should have their image augmented
         if idx >= len(self.labels):
             img, label = self.optional_transformations(img, label)
-        print(f"New Dimensions: {(img.shape[2], img.shape[1])}, New Label: {(label[0], label[1])}")
+            
+        # print(f"New Dimensions: {(img.shape[2], img.shape[1])}, New Label: {(label[0], label[1])}")
         return img, torch.Tensor(label)
 
     def optional_transformations(self, img: torch.Tensor, label: Tuple[int, int]) -> Tuple[torch.Tensor, Tuple[int, int]]:

@@ -10,6 +10,7 @@ from model import SnoutNet
 from torch.utils.data import DataLoader
 from torchsummary import summary
 from typing import Optional
+import time
 
 def train(epochs: Optional[int] = 30, **kwargs) -> None:
     """
@@ -31,8 +32,8 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
     model = kwargs['model']
     
     model.train()
-    os.makedirs('./outputs', exist_ok=True)
     losses_train = []
+    start = time.time()
     for epoch in range(epochs):
         print(f"Epoch: {epoch}")
         loss_train = 0.0
@@ -64,8 +65,10 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
         plt.legend(loc=1)
         print('Saving to Loss Plot at ./outputs/loss_plot.png')
         plt.savefig('./outputs/loss_plot.png')
-        return
+    end = time.time()
+    print(f"Training completed in {(end - start)/ 60:.2f} minutes")
 
+    
 def init_weights(m):
     if type(m) == nn.Linear or type(m) == nn.Conv2d:
         torch.nn.init.xavier_uniform_(m.weight)
@@ -75,7 +78,6 @@ def main():
     argParser = argparse.ArgumentParser()
     argParser.add_argument('-t', metavar='transformation', type=str, help='One of f, r, or fr to expand dataset through a flip, rotation, or both.')
     args = argParser.parse_args()
-    
     transformation = []
     if args.t.find('f') > -1:
         transformation.append('flip')
@@ -99,6 +101,9 @@ def main():
         batch_size=64, 
         shuffle=True
     )
+
+    # Ensure that output folder is ready
+    os.makedirs('./outputs', exist_ok=True)
 
     optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
