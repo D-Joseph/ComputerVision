@@ -83,7 +83,6 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
         filename = f"./outputs_{kwargs['file_suffix']}/loss_plot_{kwargs['file_suffix']}.png"
         print(f'Saving to Loss Plot at {filename}')
         plt.savefig(filename)
-        break
     end = time.time()
     print(f"Training completed in {(end - start)/ 60:.2f} minutes")
 
