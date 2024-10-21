@@ -27,7 +27,7 @@ def test(model: SnoutNet, loader: DataLoader, device: torch.device, dataset: Sno
             sum_squared_distance += torch.sum(distances**2).item() 
 
             # Code for outputting a single image
-            
+
             # img = imgs[0].permute(1, 2, 0).numpy() 
             # label = [lbls[0][0], lbls[0][1], predictions[0][0], predictions[0][1]]
             # print(label)
@@ -63,7 +63,8 @@ def main():
     dataloader = DataLoader(
         dataset,
         batch_size=args.b,
-        shuffle=True
+        shuffle=True,
+        collate_fn=SnoutDataset.remove_failed
     )
 
     test(model, dataloader, device, dataset, output_dir)

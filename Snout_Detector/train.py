@@ -88,6 +88,7 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
 
 
 def init_weights(m):
+    """ Initialize default weights for the model. """
     if type(m) == nn.Linear or type(m) == nn.Conv2d:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
@@ -99,7 +100,6 @@ def main():
     argParser.add_argument('-l', metavar='labels', type=str, help='path to labels file, defaults to ./oxford-iiit-pet-noses/', default='./oxford-iiit-pet-noses/')
     argParser.add_argument('-b', metavar='batch_size', type=int, help='batch size, defaults to 64', default=64)
     args = argParser.parse_args()
-
 
     transformation = []
     if args.t and 'f' in args.t:
@@ -120,13 +120,15 @@ def main():
     train_data = DataLoader(
         SnoutDataset(args.i, f"{args.l}/train_noses.txt", transform=transformation),
         batch_size=args.b, 
-        shuffle=True
+        shuffle=True,
+        collate_fn=SnoutDataset.remove_failed
     )
 
     test_data = DataLoader(
         SnoutDataset(args.i, f"{args.l}/test_noses.txt"),
         batch_size=args.b,
-        shuffle=True
+        shuffle=True,
+        collate_fn=SnoutDataset.remove_failed
     )
     # Ensure that output folder is ready
     os.makedirs(f'./outputs_{transformation_str}', exist_ok=True)
