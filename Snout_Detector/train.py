@@ -95,7 +95,7 @@ def main():
     summary(model, model.input_shape)
     print(args.t)
     dataloader = DataLoader(
-        SnoutDataset('./oxford-iiit-pet-noses/images-original/images', './oxford-iiit-pet-noses/train_noses.txt', transform=args.t),
+        SnoutDataset('./oxford-iiit-pet-noses/images-original/images', './oxford-iiit-pet-noses/train_noses.txt', transform=transformation),
         batch_size=64, 
         shuffle=True
     )
