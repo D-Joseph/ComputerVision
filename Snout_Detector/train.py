@@ -4,7 +4,6 @@ import os
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from SnoutDataset import SnoutDataset
-import datetime
 import argparse
 from model import SnoutNet
 from torch.utils.data import DataLoader
@@ -20,7 +19,8 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
         epochs (Optional[int]): The number of epochs for training. Default is 30.
         kwargs: 
             - model: The model to be trained.
-            - loader: The data loader for training data.
+            - train: The data loader for training data.
+            - test: The data loader for training data.
             - device: The device to train on ('cpu' or 'cuda').
             - fn_loss: The loss function.
             - optimizer: The optimizer to use for training.
@@ -33,11 +33,14 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
     
     model.train()
     losses_train = []
+    losses_val = []
     start = time.time()
+
     for epoch in range(epochs):
+        model.train()
         print(f"Epoch: {epoch}")
         loss_train = 0.0
-        for data in kwargs['loader']:
+        for data in kwargs['train']:
             imgs, lbls = data
             imgs = imgs.to(device=kwargs['device'])
             lbls = lbls.to(device=kwargs['device'])
@@ -49,22 +52,38 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
             loss_train += loss.item()
 
         kwargs['scheduler'].step(loss_train)
-        losses_train += [loss_train/len(kwargs['loader'])]
+        losses_train.append(loss_train/len(kwargs['train']))
 
-        print('{} Epoch {}, Training loss {}'.format(
-            datetime.datetime.now(), epoch, loss_train/len(kwargs['loader'])))
+        
+        model.eval()  # Set the model to evaluation mode
+        loss_val = 0.0
+        with torch.no_grad():
+            for imgs, lbls in kwargs['test']:
+                imgs = imgs.to(device=kwargs['device'])
+                lbls = lbls.to(device=kwargs['device'])
+                outputs = model(imgs)
+                loss = kwargs['fn_loss'](outputs, lbls)
+                loss_val += loss.item()
+        
+        losses_val.append(loss_val / len(kwargs['test']))
+        
+        print(f"{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())} Epoch {epoch}, Training loss {loss_train/len(kwargs['train'])}, Validation loss {loss_val / len(kwargs['test'])}")
 
-        print('Saving Weights to ./weights.pth')
-        torch.save(model.state_dict(), './weights.pth')
+        filename = f"./outputs_{kwargs['file_suffix']}/weights.pth"
+        print(f'Saving Weights to {filename}')
+        torch.save(model.state_dict(), filename)
 
         plt.figure(2, figsize=(12, 7))
         plt.clf()
         plt.plot(losses_train, label='train')
+        plt.plot(losses_val, label='val')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend(loc=1)
-        print('Saving to Loss Plot at ./outputs/loss_plot.png')
-        plt.savefig('./outputs/loss_plot.png')
+        filename = f"./outputs_{kwargs['file_suffix']}/loss_plot_{kwargs['file_suffix']}.png"
+        print(f'Saving to Loss Plot at {filename}')
+        plt.savefig(filename)
+        break
     end = time.time()
     print(f"Training completed in {(end - start)/ 60:.2f} minutes")
 
@@ -77,8 +96,9 @@ def init_weights(m):
 def main():
     argParser = argparse.ArgumentParser()
     argParser.add_argument('-t', metavar='transformation', type=str, choices=['f', 'r', 'fr'], help='one of f, r, or fr to expand the dataset through a flip (f), rotation (r), or both (fr).')
-    argParser.add_argument('-i', metavar='images_directory', type=str, help='absolute path to images directory, defaults to ./oxford-iiit-pet-noses/images-original/images', default='./oxford-iiit-pet-noses/images-original/images')
-    argParser.add_argument('-l', metavar='labels', type=str, help='absolute path to labels file, defaults to ./oxford-iiit-pet-noses/train_noses.txt', default='./oxford-iiit-pet-noses/train_noses.txt')
+    argParser.add_argument('-i', metavar='images_directory', type=str, help='path to images directory, defaults to ./oxford-iiit-pet-noses/images-original/images/', default='./oxford-iiit-pet-noses/images-original/images/')
+    argParser.add_argument('-l', metavar='labels', type=str, help='path to labels file, defaults to ./oxford-iiit-pet-noses/', default='./oxford-iiit-pet-noses/')
+    argParser.add_argument('-b', metavar='batch_size', type=int, help='batch size, defaults to 64', default=64)
     args = argParser.parse_args()
 
 
@@ -87,7 +107,8 @@ def main():
         transformation.append('flip')
     if args.t and 'r' in args.t:
         transformation.append('rotate')
-    
+    transformation_str = '_'.join(transformation) if transformation else 'none'
+
     device = 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
@@ -97,15 +118,19 @@ def main():
     model.to(device)
     model.apply(init_weights)
     summary(model, model.input_shape)
-    print(args.t)
-    dataloader = DataLoader(
-        SnoutDataset(args.i, args.l, transform=transformation),
-        batch_size=64, 
+    train_data = DataLoader(
+        SnoutDataset(args.i, f"{args.l}/train_noses.txt", transform=transformation),
+        batch_size=args.b, 
         shuffle=True
     )
 
+    test_data = DataLoader(
+        SnoutDataset(args.i, f"{args.l}/test_noses.txt"),
+        batch_size=args.b,
+        shuffle=True
+    )
     # Ensure that output folder is ready
-    os.makedirs('./outputs', exist_ok=True)
+    os.makedirs(f'./outputs_{transformation_str}', exist_ok=True)
 
     optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
@@ -115,9 +140,11 @@ def main():
             optimizer=optimizer,
             model=model,
             fn_loss=loss_fn,
-            loader=dataloader,
+            train=train_data,
+            test=test_data,
             scheduler=scheduler,
             device=device,
+            file_suffix = transformation_str
             )
 
 

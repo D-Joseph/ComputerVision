@@ -23,7 +23,7 @@ class SnoutDataset(Dataset):
         old_x = int(lbl[1:comma])
         old_y = int(lbl[comma+1:-1])
         
-        print(f"Old Dimensions: {(img.shape[2], img.shape[1])}, Old Label: {(old_x, old_y)}")
+        # print(f"Old Dimensions: {(img.shape[2], img.shape[1])}, Old Label: {(old_x, old_y)}")
 
         # Calculate new coords based on uniform resizing ratio
         new_x = int(old_x * 227 / img.shape[2])
