@@ -68,7 +68,7 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
     end = time.time()
     print(f"Training completed in {(end - start)/ 60:.2f} minutes")
 
-    
+
 def init_weights(m):
     if type(m) == nn.Linear or type(m) == nn.Conv2d:
         torch.nn.init.xavier_uniform_(m.weight)
@@ -84,7 +84,6 @@ def main():
     if args.t.find('r') > -1:
         transformation.append('rotate')
     
-    print(transformation)
 
     device = 'cpu'
     if torch.cuda.is_available():
