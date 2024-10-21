@@ -1,0 +1,4 @@
+python test.py -d ./outputs_none -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python test.py -d ./outputs_flip -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python test.py -d ./outputs_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python test.py -d ./outputs_flip_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64

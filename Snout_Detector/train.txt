@@ -1,0 +1,4 @@
+python train.py -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python train.py f -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python train.py r -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python train.py fr -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
