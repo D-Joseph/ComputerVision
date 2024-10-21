@@ -76,12 +76,16 @@ def init_weights(m):
 
 def main():
     argParser = argparse.ArgumentParser()
-    argParser.add_argument('-t', metavar='transformation', type=str, help='One of f, r, or fr to expand dataset through a flip, rotation, or both.')
+    argParser.add_argument('-t', metavar='transformation', type=str, choices=['f', 'r', 'fr'], help='one of f, r, or fr to expand the dataset through a flip (f), rotation (r), or both (fr).')
+    argParser.add_argument('-i', metavar='images_directory', type=str, help='absolute path to images directory, defaults to ./oxford-iiit-pet-noses/images-original/images', default='./oxford-iiit-pet-noses/images-original/images')
+    argParser.add_argument('-l', metavar='labels', type=str, help='absolute path to labels file, defaults to ./oxford-iiit-pet-noses/train_noses.txt', default='./oxford-iiit-pet-noses/train_noses.txt')
     args = argParser.parse_args()
+
+
     transformation = []
-    if args.t and args.t.find('f') > -1:
+    if args.t and 'f' in args.t:
         transformation.append('flip')
-    if args.t and args.t.find('r') > -1:
+    if args.t and 'r' in args.t:
         transformation.append('rotate')
     
     device = 'cpu'
@@ -95,7 +99,7 @@ def main():
     summary(model, model.input_shape)
     print(args.t)
     dataloader = DataLoader(
-        SnoutDataset('./oxford-iiit-pet-noses/images-original/images', './oxford-iiit-pet-noses/train_noses.txt', transform=transformation),
+        SnoutDataset(args.i, args.l, transform=transformation),
         batch_size=64, 
         shuffle=True
     )
