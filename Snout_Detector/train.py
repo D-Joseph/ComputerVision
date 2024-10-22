@@ -36,7 +36,7 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
     losses_val = []
     start = time.time()
 
-    for epoch in range(epochs):
+    for epoch in range(1, epochs+1):
         model.train()
         print(f"Epoch: {epoch}")
         loss_train = 0.0
@@ -51,12 +51,13 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
             kwargs['optimizer'].step()
             loss_train += loss.item()
 
-        kwargs['scheduler'].step(loss_train)
+        
         losses_train.append(loss_train/len(kwargs['train']))
 
         
         model.eval()  # Set the model to evaluation mode
         loss_val = 0.0
+        
         with torch.no_grad():
             for imgs, lbls in kwargs['test']:
                 imgs = imgs.to(device=kwargs['device'])
@@ -64,10 +65,10 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
                 outputs = model(imgs)
                 loss = kwargs['fn_loss'](outputs, lbls)
                 loss_val += loss.item()
-        
+        kwargs['scheduler'].step(loss_val)
         losses_val.append(loss_val / len(kwargs['test']))
         
-        print(f"{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())} Epoch {epoch}, Training loss {loss_train/len(kwargs['train'])}, Validation loss {loss_val / len(kwargs['test'])}")
+        print(f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Epoch {epoch}, Training loss {loss_train/len(kwargs['train'])}, Validation loss {loss_val / len(kwargs['test'])}")
 
         filename = f"./outputs_{kwargs['file_suffix']}/weights.pth"
         print(f'Saving Weights to {filename}')
@@ -84,7 +85,23 @@ def train(epochs: Optional[int] = 30, **kwargs) -> None:
         print(f'Saving to Loss Plot at {filename}')
         plt.savefig(filename)
     end = time.time()
-    print(f"Training completed in {(end - start)/ 60:.2f} minutes")
+    elapsed_time = (end - start) / 60
+    print(f"Training completed in {elapsed_time:.2f} minutes")
+    time_filename = f'./outputs_{kwargs["file_suffix"]}/training_time.txt'
+
+
+    try:
+        with open(time_filename, 'w') as f:
+            f.write(f"Training completed in {elapsed_time:.2f} minutes\n") 
+            f.write(f"Final loss: {loss.item()}\n")
+            f.write(
+                f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} "
+                f"Epoch {epoch}, "
+                f"Training loss {loss_train/len(kwargs['train']):.4f}, "
+                f"Validation loss {loss_val/len(kwargs['test']):.4f}\n"
+            )
+    except IOError as e:
+        print(f"An error occurred while writing to the file: {e}")
 
 
 def init_weights(m):
