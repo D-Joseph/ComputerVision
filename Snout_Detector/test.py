@@ -59,7 +59,7 @@ def main():
     model.load_state_dict(torch.load(f'{args.d}/weights.pth')) # Apply weights from training
     model.to(device=device)
 
-    dataset = SnoutDataset(args.i, args.l)
+    dataset = SnoutDataset(args.i, f"{args.l}/test_noses.txt")
     dataloader = DataLoader(
         dataset,
         batch_size=args.b,

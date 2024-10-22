@@ -1,3 +1,5 @@
+# These lines assume the dataset belongs to the root directory, and will work if you pass in the absolute path to the images and labels directories
+
 python train.py -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
 python train.py f -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
 python train.py r -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64

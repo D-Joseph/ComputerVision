@@ -97,7 +97,7 @@ def main():
     argParser = argparse.ArgumentParser()
     argParser.add_argument('-t', metavar='transformation', type=str, choices=['f', 'r', 'fr'], help='one of f, r, or fr to expand the dataset through a flip (f), rotation (r), or both (fr).')
     argParser.add_argument('-i', metavar='images_directory', type=str, help='path to images directory, defaults to ./oxford-iiit-pet-noses/images-original/images/', default='./oxford-iiit-pet-noses/images-original/images/')
-    argParser.add_argument('-l', metavar='labels', type=str, help='path to labels file, defaults to ./oxford-iiit-pet-noses/', default='./oxford-iiit-pet-noses/')
+    argParser.add_argument('-l', metavar='labels', type=str, help='path to labels directory, defaults to ./oxford-iiit-pet-noses/', default='./oxford-iiit-pet-noses/')
     argParser.add_argument('-b', metavar='batch_size', type=int, help='batch size, defaults to 64', default=64)
     args = argParser.parse_args()
 
