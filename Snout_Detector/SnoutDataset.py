@@ -5,7 +5,7 @@ from torch.utils.data.dataloader import default_collate
 from torchvision.io import read_image
 import torchvision.transforms as transforms
 import torch
-from typing import Optional, Tuple, Literal
+from typing import Optional, Tuple, Literal, Union
 
 class SnoutDataset(Dataset):
     def __init__(self, images_dir: str, labels_file: str, transform: Optional[list[Literal['flip', 'rotate']]] = []) -> None:
@@ -38,7 +38,7 @@ class SnoutDataset(Dataset):
 
         return img, (new_x, new_y)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]  | Tuple[None, None]:
+    def __getitem__(self, idx: int) -> Union[Tuple[torch.Tensor, torch.Tensor], None]:
         """ Get an image and label and transform as necessary. """
         # To handle augmentation, we will first add the original images into the dataset, and then wrap around for each augmentation
         try:
