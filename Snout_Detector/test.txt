@@ -1,6 +1,7 @@
 # These lines assume the dataset belongs to the root directory, and will work if you pass in the absolute path to the images and labels directories
 
-python test.py -d ./outputs_none -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
-python test.py -d ./outputs_flip -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
-python test.py -d ./outputs_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
-python test.py -d ./outputs_flip_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 64
+python3 test.py -d ./outputs_none -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 32
+python test.py -d ./outputs_flip -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 32
+python test.py -d ./outputs_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 32
+python test.py -d ./outputs_flip_rotate -i ./oxford-iiit-pet-noses/images-original/images/ -l ./oxford-iiit-pet-noses/ -b 32
+

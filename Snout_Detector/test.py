@@ -1,6 +1,7 @@
 import argparse
 import torch
 import time
+import os
 from torch.utils.data import DataLoader
 from model import SnoutNet
 from SnoutDataset import SnoutDataset
@@ -11,8 +12,11 @@ def test(model: SnoutNet, loader: DataLoader, device: torch.device, dataset: Sno
     model.eval()
     start = time.time()
     min_distance, max_distance, sum_distance, sum_squared_distance, num_images = float('inf'), float('-inf'), 0, 0, len(dataset)
+    output_location = "test_imgs"
     with torch.no_grad():
-        for imgs, lbls in loader:
+
+        for i, (imgs, lbls) in enumerate(loader):
+            
             imgs = imgs.to(device=device)
             lbls = lbls.to(device=device)
 
@@ -26,22 +30,39 @@ def test(model: SnoutNet, loader: DataLoader, device: torch.device, dataset: Sno
             sum_distance += torch.sum(distances).item() 
             sum_squared_distance += torch.sum(distances**2).item() 
 
-            # Code for outputting a single image
+            #Code for outputting a single image
 
-            # img = imgs[0].permute(1, 2, 0).numpy() 
-            # label = [lbls[0][0], lbls[0][1], predictions[0][0], predictions[0][1]]
-            # print(label)
-            # plt.imshow(img)
-            # plt.scatter([label[0]], [label[1]], color='red', marker='x') 
-            # plt.scatter([label[2]], [label[3]], color='yellow', marker='o') 
-            # plt.savefig('test_output.png')
+            # if i == 0:  # only process and save the first image
+            #     img = imgs[0].permute(1, 2, 0).cpu().numpy()  # Move to CPU and permute for proper channel ordering
+            #     label = [lbls[0][0].cpu().item(), lbls[0][1].cpu().item(), predictions[0][0].cpu().item(), predictions[0][1].cpu().item()]
+                
+            #     print(f"Label vs Prediction: {label}")  # Print the real and predicted coordinates
+                
+            #     # Plotting the image
+            #     plt.imshow(img)
+            #     plt.scatter([label[0]], [label[1]], color='red', marker='x', label='Actual')  # Actual point
+            #     plt.scatter([label[2]], [label[3]], color='yellow', marker='o', label='Predicted')  # Predicted point
+            #     plt.legend()
+
+            #     # Create directory if it doesn't exist
+            #     os.makedirs(output_location, exist_ok=True)
+                
+            #     # Save the output image
+            #     plt.savefig(f'{output_location}/test_output{i}.png')
+            #     plt.close()  # Close the figure to free memory
+
+            #     # Exit the loop after processing the first image
+            #     break
 
     # Calculate mean and standard deviation
     mean_distance = torch.tensor(sum_distance / num_images)
     std_dev = torch.sqrt((sum_squared_distance / num_images) - (mean_distance**2))
+    time_elapsed = time.time() - start
+    msec_per_image = time_elapsed / num_images * 1000
+
 
     end = time.time()
-
+    print(f"msc per image: {msec_per_image:.2f}")
     print(f"Training Completed:\nTime Elapsed: {(end-start)/60:.2f} minutes\nMinimum Distance: {min_distance}\nMaximum Distance: {max_distance}\nAverage Distance: {mean_distance}\nStandard Deviation: {std_dev}")
 
 def main():
@@ -58,7 +79,7 @@ def main():
     model = SnoutNet()
     model.load_state_dict(torch.load(f'{args.d}/weights.pth')) # Apply weights from training
     model.to(device=device)
-
+    
     dataset = SnoutDataset(args.i, f"{args.l}/test_noses.txt")
     dataloader = DataLoader(
         dataset,
