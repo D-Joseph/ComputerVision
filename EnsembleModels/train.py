@@ -108,6 +108,12 @@ def main():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to train on")
     parser.add_argument("--save_dir", type=str, default="outputs", help="Directory to save model outputs")
     args = parser.parse_args()
+    
+    device = 'cpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
+    print(f'Using: {device}')
+
     print(f"we have parsed args: {args}")
     train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=0)
 
