@@ -16,6 +16,7 @@ def train(epochs: int = 30, **kwargs) -> None:
     Args:
         epochs (int): The number of epochs for training. Default is 30.
         kwargs: 
+            - data: The data directory.
             - model: The model to be trained (or its string identifier for `get_model`).
             - train: The data loader for training data.
             - test: The data loader for validation data.
@@ -102,20 +103,22 @@ def train(epochs: int = 30, **kwargs) -> None:
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Train a model")
+    parser.add_argument("--data", type=str, default="data", help="should be directory where train and test data is stored")
     parser.add_argument("--model", type=str, default="resnet18", help="Model to train (alexnet, vgg16, resnet18)")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--epochs", type=int, default=30, help="Number of epochs to train")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to train on")
-    parser.add_argument("--save_dir", type=str, default="outputs", help="Directory to save model outputs")
+    parser.add_argument("--save_dir", type=str, default="./outputs", help="Directory to save model outputs")
     args = parser.parse_args()
-    
+
     device = 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
     print(f'Using: {device}')
 
     print(f"we have parsed args: {args}")
-    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=0)
+    
+    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=0, args_data=args.data)
 
     # Initialize model
     model = get_model(args.model, 100)  # 100 classes in CIFAR-100

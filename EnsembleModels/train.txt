@@ -1,8 +1,7 @@
-#!/bin/bash
+python3 train.py --model alexnet --batch_size 64 --epochs 50 --device cuda --save_dir outputs/alexnet --data ./data
 
-python3 train.py --model alexnet --batch_size 64 --epochs 50 --device cuda --save_dir outputs/alexnet
+python3 train.py --model vgg16 --batch_size 64 --epochs 50 --device cuda --save_dir outputs/vgg16 --data ./data
 
-python3 train.py --model vgg16 --batch_size 64 --epochs 50 --device cuda --save_dir outputs/vgg16
+python3 train.py --model resnet18 --batch_size 64 --epochs 50 --device cuda --save_dir outputs/resnet18 --data ./data
 
-python3 train.py --model resnet18 --batch_size 64 --epochs 50 --device cuda --save_dir outputs/resnet18
 
