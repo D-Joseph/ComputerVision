@@ -1,2 +1,1 @@
-python test.py --weights outputs --model alexnet --device cuda --data ./data --batch_size 32 --num_workers 2
-
+python train.py --data ./data --model alexnet --batch_size 32 --epochs 40 --save_dir ./outputs/alexnet
