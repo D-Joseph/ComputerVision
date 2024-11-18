@@ -1,0 +1,8 @@
+python test.py --weights outputs --model resnet18 --device cuda
+
+python test.py --weights outputs --model alexnet --device cuda
+
+python test.py --weights outputs --model vgg16 --device cuda
+
+
+
