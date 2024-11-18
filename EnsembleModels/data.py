@@ -1,10 +1,11 @@
 from torchvision.datasets import CIFAR100
-from torchvision.transforms import Compose, ToTensor, Normalize
+from torchvision.transforms import Compose, ToTensor, Normalize, Resize
 from torch.utils.data import DataLoader
 
 def get_data_loaders(batch_size: int = 32, num_workers: int = 0):
     """ Get the CIFAR-100 data loaders. """
     transform = Compose([
+        Resize((224, 224)),
         ToTensor(),
         Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
     ])#yeah ik random ass values : https://gist.github.com/weiaicunzai/e623931921efefd4c331622c344d8151
