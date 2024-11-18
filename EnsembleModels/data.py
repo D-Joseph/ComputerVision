@@ -6,7 +6,8 @@ from torchvision.transforms import Compose, Resize, ToTensor, Normalize, RandomC
 from torchvision.datasets import CIFAR100
 from torch.utils.data import DataLoader
 
-def get_data_loaders(batch_size: int = 32, num_workers: int = 2):
+def get_data_loaders(batch_size: int = 32, num_workers: int = 2, data_dir: str = "./data") -> tuple:
+
     """ Get the CIFAR-100 data loaders. """
     train_transform = Compose([
         RandomCrop(32, padding=4),  # Augmentation: Random cropping with padding
@@ -22,8 +23,8 @@ def get_data_loaders(batch_size: int = 32, num_workers: int = 2):
         Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))  # CIFAR-100 normalization
     ])
     
-    train_dataset = CIFAR100(root="./data", train=True, download=True, transform=train_transform)
-    test_dataset = CIFAR100(root="./data", train=False, download=True, transform=test_transform)
+    train_dataset = CIFAR100(root= data_dir, train=True, download=True, transform=train_transform)
+    test_dataset = CIFAR100(root=data_dir, train=False, download=True, transform=test_transform)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)

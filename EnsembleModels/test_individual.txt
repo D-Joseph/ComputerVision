@@ -1,8 +1,9 @@
-python test.py --weights outputs --model resnet18 --device cuda
+python test.py --weights outputs --model resnet18 --device cuda --data ./data --batch_size 32 --num_workers 2
 
-python test.py --weights outputs --model alexnet --device cuda
+python test.py --weights outputs --model alexnet --device cuda --data ./data --batch_size 32 --num_workers 2
 
-python test.py --weights outputs --model vgg16 --device cuda
+python test.py --weights outputs --model vgg16 --device cuda --data ./data --batch_size 32 --num_workers 2
+
 
 
 
