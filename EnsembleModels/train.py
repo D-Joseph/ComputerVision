@@ -107,13 +107,10 @@ def main():
     parser.add_argument("--model", type=str, default="resnet18", help="Model to train (alexnet, vgg16, resnet18)")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--epochs", type=int, default=30, help="Number of epochs to train")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to train on")
     parser.add_argument("--save_dir", type=str, default="./outputs", help="Directory to save model outputs")
     args = parser.parse_args()
 
-    device = 'cpu'
-    if torch.cuda.is_available():
-        device = 'cuda'
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Using: {device}')
 
     print(f"we have parsed args: {args}")

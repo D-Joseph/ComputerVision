@@ -26,7 +26,7 @@ def show_images(loader):
     plt.show()
     
 def main():
-    train_loader, test_loader = get_data_loaders()
+    train_loader, test_loader = get_data_loaders(32, 2, "./data")
     show_images(train_loader)
     show_images(test_loader)
 

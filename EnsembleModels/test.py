@@ -45,7 +45,6 @@ def main():
     parser.add_argument('--data', type=str, default='data', help='The path to the data directory')
     parser.add_argument('--weights', type=str, default='outputs', help='The path to the model weights')
     parser.add_argument('--model', type=str, default='resnet18', help='The model to test')
-    parser.add_argument('--device', type=str, default='cuda', help='The device to test on')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size for test loader')
     parser.add_argument('--num_workers', type=int, default=2, help='Number of workers for test loader')
 
@@ -53,7 +52,7 @@ def main():
 
     # Load the model
     model = get_model(args.model, 100)
-    device = torch.device(args.device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_dir = args.data
     batch_size = args.batch_size
