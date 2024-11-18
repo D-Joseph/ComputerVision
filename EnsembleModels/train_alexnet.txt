@@ -1,1 +1,1 @@
-python train.py --data ./data --model alexnet --batch_size 32 --epochs 40 --save_dir ./outputs/alexnet
+python train.py --data ./data --model alexnet --batch_size 32 --epochs 40 --num_workers 2 --save_dir ./outputs/alexnet

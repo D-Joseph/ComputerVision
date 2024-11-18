@@ -1,1 +1,1 @@
-python train.py --data ./data --model resnet18 --batch_size 32 --epochs 40 --save_dir ./outputs/resnet18
+python train.py --data ./data --model resnet18 --batch_size 32 --epochs 40 --num_workers 2 --save_dir ./outputs/resnet18
