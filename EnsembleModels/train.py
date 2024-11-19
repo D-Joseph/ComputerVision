@@ -126,7 +126,7 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
     
     # Train model
-    train(epochs=args.epochs, model=model, train=train_loader, test=test_loader, device=args.device, fn_loss=loss_fn, optimizer=optimizer, scheduler=scheduler, save_dir=args.save_dir)
+    train(epochs=args.epochs, model=model, train=train_loader, test=test_loader, fn_loss=loss_fn, optimizer=optimizer, scheduler=scheduler, save_dir=args.save_dir)
 
 if __name__ == "__main__":
     main()
