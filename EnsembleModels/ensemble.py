@@ -12,7 +12,7 @@ def save_accuracy(accuracy, method, ensemble_type, output_path, description=""):
     with open(output_path, "a") as f:
         f.write(f"Top1 error rate for {description} and {ensemble_type} ensemble using {method} method: {top1_error:.4f}\n")
     print(f"Finished {description}. Results logged to {output_path}")
-    
+
 def ensemble_probability_averaging(models, test_loader, device, description):
     correct = 0 
 
@@ -149,7 +149,7 @@ def main():
     }
 
     # Load test data
-    test_loader = get_data_loaders(batch_size, num_workers, data_dir)
+    test_loader = get_data_loaders(batch_size, num_workers, data_dir)[1]
 
     # Run ensembles for weights at epoch 5
     run_ensembles(epoch_5_weights["resnet18"], epoch_5_weights["alexnet"], epoch_5_weights["vgg16"], 
