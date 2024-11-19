@@ -1,7 +1,0 @@
-python3 train.py --model alexnet --batch_size 64 --epochs 40 --save_dir outputs/alexnet --data ./data
-
-python3 train.py --model vgg16 --batch_size 64 --epochs 50 --save_dir outputs/vgg16 --data ./data
-
-python3 train.py --model resnet18 --batch_size 64 --epochs 40 --save_dir outputs/resnet18 --data ./data
-
-

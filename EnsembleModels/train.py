@@ -107,15 +107,17 @@ def main():
     parser.add_argument("--model", type=str, default="resnet18", help="Model to train (alexnet, vgg16, resnet18)")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--epochs", type=int, default=30, help="Number of epochs to train")
+    parser.add_argument('--num_workers', type=int, default=2, help='Number of workers for test loader')
     parser.add_argument("--save_dir", type=str, default="./outputs", help="Directory to save model outputs")
-    args = parser.parse_args()
 
+    args = parser.parse_args()
+    num_workers = args.num_workers
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Using: {device}')
 
     print(f"we have parsed args: {args}")
     
-    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=0, args_data=args.data)
+    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=num_workers, args_data=args.data)
 
     # Initialize model
     model = get_model(args.model, 100)  # 100 classes in CIFAR-100

@@ -1,1 +1,1 @@
-python train.py --data ./data --model vgg16 --batch_size 32 --epochs 50 --num_workers 2 --save_dir ./outputs/vgg16
+python train.py --data ./data --model vgg16 --batch_size 32 --epochs 50 --num_workers 2 --save_dir ./outputs/vgg16 
