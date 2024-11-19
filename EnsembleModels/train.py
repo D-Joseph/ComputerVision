@@ -117,7 +117,7 @@ def main():
 
     print(f"we have parsed args: {args}")
     
-    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=num_workers, args_data=args.data)
+    train_loader, test_loader = get_data_loaders(batch_size=args.batch_size, num_workers=num_workers, data_dir=args.data)
 
     # Initialize model
     model = get_model(args.model, 100)  # 100 classes in CIFAR-100
@@ -126,7 +126,7 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
     
     # Train model
-    train(epochs=args.epochs, model=model, train=train_loader, test=test_loader, fn_loss=loss_fn, optimizer=optimizer, scheduler=scheduler, save_dir=args.save_dir)
+    train(epochs=args.epochs, model=model, train=train_loader, test=test_loader, device=device, fn_loss=loss_fn, optimizer=optimizer, scheduler=scheduler, save_dir=args.save_dir)
 
 if __name__ == "__main__":
     main()
