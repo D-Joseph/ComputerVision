@@ -14,6 +14,13 @@ Each project in this repository demonstrates a practical implementation of deep 
      - **Interpolation**: The project includes linear interpolation between the bottleneck vectors of two images, smoothly transitioning between them to visualize how the model handles morphing.
    - **Dataset**: MNIST (handwritten digits).
 
+### 2. Pet Nose Localization
+   - **Description**: This project developed a convolutional neural network model called SnoutNet to localize pet noses in images by predicting their (u,v) coordinates. The model takes in a 227x227 RGB image and outputs the predicted nose coordinates.
+   - **Features**:
+      - **Model Architecture**: SnoutNet has a CNN-based architecture with 3 convolutional layers followed by 3 fully connected layers. The convolutional layers extract features, while the FC layers predict the nose coordinates.
+      - **Data Augmentation**: The team experimented with 3 data augmentation techniques: horizontal flip, 90-degree rotation, and a combination of both. These augmentations effectively doubled the training dataset size.
+      - **Performance Evaluation**: The team evaluated the model's performance using various augmentation strategies. Flip augmentation achieved the best overall performance with the lowest mean localization error of 21.7, but introduced some high maximum errors of up to 170. Other augmentation strategies showed higher mean errors around 24-25.
+   - **Dataset**: Custom pet nose dataset with labeled (u,v) coordinates.
 ---
 
 ### Usage
