@@ -29,7 +29,7 @@ def evaluate_model(model, dataloader, device, num_classes=21):
     with torch.no_grad():
         for images, masks in dataloader:
             images, masks = images.to(device), masks.to(device)
-            outputs = model(images)['out']
+            outputs = model(images)
             batch_miou = calculate_miou(outputs, masks, num_classes)
             total_miou += batch_miou
             num_batches += 1
