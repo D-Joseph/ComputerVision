@@ -17,7 +17,8 @@ def train(epochs = 30, **kwargs) -> None:
     Args:
         epochs (Optional[int]): The number of epochs for training. Default is 30.
         kwargs: 
-            - model: The model to be trained.
+            - student: The student model to be trained.
+            - teacher: The teacher model to be trained.
             - train: The data loader for training data.
             - test: The data loader for training data.
             - device: The device to train on ('cpu' or 'cuda').
@@ -28,22 +29,25 @@ def train(epochs = 30, **kwargs) -> None:
     print("Training Parameters")
     for kwarg in kwargs:
         print(kwarg, "=", kwargs[kwarg])
-    model = kwargs['model']
+    student = kwargs['student']
+    teacher = kwargs['teacher']
     
-    model.train()
+    teacher.eval()
+    student.train()
+
     losses_train = []
     losses_val = []
     start = time.time()
 
     for epoch in range(1, epochs+1):
-        model.train()
+        student.train()
         print("Epoch:", epoch)
         loss_train = 0.0
         for data in kwargs['train']:
             imgs, lbls = data
             imgs = imgs.to(device=kwargs['device'])
             lbls = lbls.to(device=kwargs['device'])
-            outputs = model(imgs)
+            outputs = student(imgs)
             loss = kwargs['fn_loss'](outputs, lbls)
             kwargs['optimizer'].zero_grad()
             loss.backward()
@@ -54,14 +58,14 @@ def train(epochs = 30, **kwargs) -> None:
         losses_train.append(loss_train/len(kwargs['train']))
 
         
-        model.eval()  # Set the model to evaluation mode
+        student.eval()  # Set the student model to evaluation mode
         loss_val = 0.0
         
         with torch.no_grad():
             for imgs, lbls in kwargs['test']:
                 imgs = imgs.to(device=kwargs['device'])
                 lbls = lbls.to(device=kwargs['device'])
-                outputs = model(imgs)
+                outputs = student(imgs)
                 loss = kwargs['fn_loss'](outputs, lbls)
                 loss_val += loss.item()
         kwargs['scheduler'].step(loss_val)
@@ -71,7 +75,7 @@ def train(epochs = 30, **kwargs) -> None:
 
         filename = "./outputs/weights.pth"
         print("Saving Weights to", filename)
-        torch.save(model.state_dict(), filename)
+        torch.save(student.state_dict(), filename)
 
         plt.figure(2, figsize=(12, 7))
         plt.clf()
@@ -88,13 +92,19 @@ def train(epochs = 30, **kwargs) -> None:
     print("Training completed in", round(elapsed_time, 2), "minutes")
     time_filename = './outputs/training_time.txt'
 
+#TODO: Finish creating this new loss function
+def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 5):
+    beta = 1 - alpha
+
+    
 
 def main():
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = ResNet18Segmentation(num_classes=21)
+    student = ResNet18Segmentation(num_classes=21)
+    teacher = fcn_resnet50(pretrained=True)
+    student = student.to(device)
+    teacher = teacher.to(device)
 
-    model = model.to(device)
     transformations = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
@@ -110,14 +120,15 @@ def main():
     test_dataset = VOCSegmentation('./data', image_set='val', transform=transformations, target_transform=mask_transformations)
     test_data = DataLoader(test_dataset, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
     
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = optim.Adam(student.parameters(), lr=1e-3, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
     loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=255)
 
 
     train(
             optimizer=optimizer,
-            model=model,
+            student=student,
+            teacher=teacher,
             fn_loss=loss_fn,
             train=train_data,
             test=test_data,
