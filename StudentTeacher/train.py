@@ -1,4 +1,3 @@
-from torchvision.models import resnet18
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
