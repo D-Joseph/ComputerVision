@@ -1,4 +1,5 @@
 import torch
+import os
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import time
@@ -22,7 +23,6 @@ def train(epochs = 30, **kwargs) -> None:
             - train: The data loader for training data.
             - test: The data loader for training data.
             - device: The device to train on ('cpu' or 'cuda').
-            - fn_loss: The loss function.
             - optimizer: The optimizer to use for training.
             - scheduler: The learning rate scheduler.
     """
@@ -47,8 +47,9 @@ def train(epochs = 30, **kwargs) -> None:
             imgs, lbls = data
             imgs = imgs.to(device=kwargs['device'])
             lbls = lbls.to(device=kwargs['device'])
-            outputs = student(imgs)
-            loss = kwargs['fn_loss'](outputs, lbls)
+            s_logits = student(imgs)
+            t_logits = teacher(imgs)["out"]
+            loss = response_distillation(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
             kwargs['optimizer'].zero_grad()
             loss.backward()
             kwargs['optimizer'].step()
@@ -60,18 +61,27 @@ def train(epochs = 30, **kwargs) -> None:
         
         student.eval()  # Set the student model to evaluation mode
         loss_val = 0.0
-        
+        teacher_acc = 0.0
+        student_acc = 0.0
         with torch.no_grad():
             for imgs, lbls in kwargs['test']:
                 imgs = imgs.to(device=kwargs['device'])
                 lbls = lbls.to(device=kwargs['device'])
-                outputs = student(imgs)
-                loss = kwargs['fn_loss'](outputs, lbls)
+
+                s_logits = student(imgs)
+                t_logits = teacher(imgs)["out"]
+
+                loss = response_distillation(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
                 loss_val += loss.item()
-        kwargs['scheduler'].step(loss_val)
+                teacher_acc += calculate_accuracy(t_logits, lbls)
+                student_acc += calculate_accuracy(s_logits, lbls)
+        teacher_acc /= len(kwargs['test'])
+        student_acc /= len(kwargs['test'])
+        kwargs['scheduler'].step(loss_val/len(kwargs['test']))
         losses_val.append(loss_val / len(kwargs['test']))
         
         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), "Epoch:", epoch, "Training loss:", loss_train/len(kwargs['train']), "Validation loss:", loss_val / len(kwargs['test']))
+        print("Teacher Accuracy:", teacher_acc, "Student Accuracy:", student_acc)
 
         filename = "./outputs/weights.pth"
         print("Saving Weights to", filename)
@@ -87,15 +97,37 @@ def train(epochs = 30, **kwargs) -> None:
         filename = "./outputs/loss_plot.png"
         print('Saving to Loss Plot at', filename)
         plt.savefig(filename)
+        # Ensure output directory exists
+        os.makedirs("./outputs/", exist_ok=True)
+        accuracy_file = os.path.join("./outputs/", "accuracy.txt")
+
+        #Append the accuracies to the file
+        with open(accuracy_file, "a") as f:
+            f.write(f"Epoch {epoch}: Teacher Accuracy: {teacher_acc:.2f}%, Student Accuracy: {student_acc:.2f}%\n")
+
+
     end = time.time()
     elapsed_time = (end - start) / 60
     print("Training completed in", round(elapsed_time, 2), "minutes")
-    time_filename = './outputs/training_time.txt'
+    #time_filename = './outputs/training_time.txt'
 
 #TODO: Finish creating this new loss function
-def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 5):
+def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
+    ce_loss = torch.nn.CrossEntropyLoss()(s_logits, label)
+    t_soft = torch.nn.functional.softmax(t_logits / temperature, dim=1)
+    s_soft = torch.nn.functional.log_softmax(s_logits / temperature, dim=1)
+
+    distillation_loss = torch.nn.functional.kl_div(s_soft, t_soft, reduction='batchmean') * (temperature ** 2)
+
     beta = 1 - alpha
 
+    return alpha * ce_loss + beta * distillation_loss
+
+def calculate_accuracy(logits, labels):
+        preds = torch.argmax(logits, dim=1)  # Get predicted classes (N, H, W)
+        correct = (preds == labels).sum().item()  # Count correctly predicted pixels
+        total = torch.numel(labels)  # Total number of pixels
+        return 100 * correct / total
     
 
 def main():
@@ -129,7 +161,6 @@ def main():
             optimizer=optimizer,
             student=student,
             teacher=teacher,
-            fn_loss=loss_fn,
             train=train_data,
             test=test_data,
             scheduler=scheduler,
