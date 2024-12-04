@@ -57,7 +57,7 @@ def train( **kwargs) -> None:
             imgs = imgs.to(device=kwargs['device'])
             lbls = lbls.to(device=kwargs['device'])
             s_logits = student(imgs)
-            t_logits = teacher(imgs)["out"]
+            t_logits = teacher(imgs)['out']
             if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
                 loss = loss_fn(s_logits, lbls)
             else:
@@ -81,7 +81,7 @@ def train( **kwargs) -> None:
                 lbls = lbls.to(device=kwargs['device'])
 
                 s_logits = student(imgs)
-                t_logits = teacher(imgs)["out"]
+                t_logits = teacher(imgs)['out']
                 if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
                     loss = loss_fn(s_logits, lbls)
                 else:
@@ -128,7 +128,7 @@ def train( **kwargs) -> None:
 
 #TODO: Finish creating this new loss function
 def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
-    ce_loss = torch.nn.CrossEntropyLoss()(s_logits, label)
+    ce_loss = CrossEntropyLoss(ignore_index=255)(s_logits, label)
     t_soft = torch.nn.functional.softmax(t_logits / temperature, dim=1)
     s_soft = torch.nn.functional.log_softmax(s_logits / temperature, dim=1)
 
@@ -139,8 +139,8 @@ def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 
     return alpha * ce_loss + beta * distillation_loss
 
 def feature_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
-    ce_loss = torch.nn.CrossEntropyLoss()(s_logits, label)
-    t_features = t_logits['out']
+    ce_loss = CrossEntropyLoss(ignore_index=255)(s_logits, label)
+    t_features = t_logits
     s_features = s_logits
     if s_features.shape != t_features.shape:
         t_features = torch.nn.functional.interpolate(
@@ -188,9 +188,9 @@ def main():
         transforms.Lambda(lambda x: torch.tensor(np.array(x, dtype=np.int64))),
     ])
 
-    train_dataset = VOCSegmentation('./data', image_set='train', transform=transformations, target_transform=mask_transformations)
+    train_dataset = VOCSegmentation('./data', image_set='train', download=False, transform=transformations, target_transform=mask_transformations)
     train_data = DataLoader(train_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
-    test_dataset = VOCSegmentation('./data', image_set='val', transform=transformations, target_transform=mask_transformations)
+    test_dataset = VOCSegmentation('./data', image_set='val', download=False, transform=transformations, target_transform=mask_transformations)
     test_data = DataLoader(test_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
     
     optimizer = optim.Adam(student.parameters(), lr=1e-3, weight_decay=1e-5)
@@ -200,7 +200,7 @@ def main():
     elif args.loss == 'feature':
         loss_fn = feature_distillation
     else:
-        loss_fn = torch.nn.CrossEntropyLoss()
+        loss_fn = CrossEntropyLoss(ignore_index=255) 
 
 
     train(
