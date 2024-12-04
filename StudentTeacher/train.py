@@ -3,15 +3,17 @@ import os
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import time
+import argparse
 from torchvision.datasets import VOCSegmentation
 from torch.nn import CrossEntropyLoss
 from torchvision.transforms import InterpolationMode
+from torchvision.models.segmentation import fcn_resnet50
 from model import ResNet18Segmentation 
 import numpy as np
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-def train(epochs = 30, **kwargs) -> None:
+def train( **kwargs) -> None:
     """
     Train the model.
 
@@ -31,14 +33,21 @@ def train(epochs = 30, **kwargs) -> None:
         print(kwarg, "=", kwargs[kwarg])
     student = kwargs['student']
     teacher = kwargs['teacher']
-    
+    epochs = kwargs['epochs']
+    loss_fn = kwargs['loss_fn']
     teacher.eval()
     student.train()
 
     losses_train = []
     losses_val = []
     start = time.time()
-
+    if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
+        output_dir = './output/none'
+    elif loss_fn == response_distillation:
+        output_dir = './output/response'
+    elif loss_fn == feature_distillation:
+        output_dir = './output/feature'
+    os.makedirs(f"{output_dir}", exist_ok=True)
     for epoch in range(1, epochs+1):
         student.train()
         print("Epoch:", epoch)
@@ -49,7 +58,10 @@ def train(epochs = 30, **kwargs) -> None:
             lbls = lbls.to(device=kwargs['device'])
             s_logits = student(imgs)
             t_logits = teacher(imgs)["out"]
-            loss = response_distillation(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
+            if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
+                loss = loss_fn(s_logits, lbls)
+            else:
+                loss = loss_fn(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
             kwargs['optimizer'].zero_grad()
             loss.backward()
             kwargs['optimizer'].step()
@@ -70,8 +82,11 @@ def train(epochs = 30, **kwargs) -> None:
 
                 s_logits = student(imgs)
                 t_logits = teacher(imgs)["out"]
+                if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
+                    loss = loss_fn(s_logits, lbls)
+                else:
+                    loss = loss_fn(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
 
-                loss = response_distillation(s_logits, t_logits, lbls, alpha=0.5, temperature=2)
                 loss_val += loss.item()
                 teacher_acc += calculate_accuracy(t_logits, lbls)
                 student_acc += calculate_accuracy(s_logits, lbls)
@@ -83,7 +98,7 @@ def train(epochs = 30, **kwargs) -> None:
         print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), "Epoch:", epoch, "Training loss:", loss_train/len(kwargs['train']), "Validation loss:", loss_val / len(kwargs['test']))
         print("Teacher Accuracy:", teacher_acc, "Student Accuracy:", student_acc)
 
-        filename = "./outputs/weights.pth"
+        filename = f"{output_dir}/weights.pth"
         print("Saving Weights to", filename)
         torch.save(student.state_dict(), filename)
 
@@ -94,12 +109,12 @@ def train(epochs = 30, **kwargs) -> None:
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend(loc=1)
-        filename = "./outputs/loss_plot.png"
+        filename = f"{output_dir}/loss_plot.png"
         print('Saving to Loss Plot at', filename)
         plt.savefig(filename)
         # Ensure output directory exists
-        os.makedirs("./outputs/", exist_ok=True)
-        accuracy_file = os.path.join("./outputs/", "accuracy.txt")
+        
+        accuracy_file = os.path.join(f"{output_dir}", "accuracy.txt")
 
         #Append the accuracies to the file
         with open(accuracy_file, "a") as f:
@@ -123,14 +138,40 @@ def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 
 
     return alpha * ce_loss + beta * distillation_loss
 
+def feature_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
+    ce_loss = torch.nn.CrossEntropyLoss()(s_logits, label)
+    t_features = t_logits['out']
+    s_features = s_logits
+    if s_features.shape != t_features.shape:
+        t_features = torch.nn.functional.interpolate(
+        t_features, size=s_features.shape[2:], mode='bilinear', align_corners=False
+    )
+
+    distillation_loss = torch.nn.functional.mse_loss(s_features, t_features)
+
+    beta = 1 - alpha
+
+    return alpha * ce_loss + beta * distillation_loss
+
 def calculate_accuracy(logits, labels):
         preds = torch.argmax(logits, dim=1)  # Get predicted classes (N, H, W)
         correct = (preds == labels).sum().item()  # Count correctly predicted pixels
         total = torch.numel(labels)  # Total number of pixels
         return 100 * correct / total
-    
+
 
 def main():
+    parser = argparse.ArgumentParser(description="Train a model")
+    
+    parser.add_argument('-e', metavar='epochs', type=int, help='Number of epochs', default=30)
+    parser.add_argument('-b', metavar='batch_size', type=int, help='Batch size', default=32)
+    parser.add_argument(
+        '--loss', 
+        choices=['response', 'feature', 'none'], 
+        help='Distillation method', 
+        default='response'
+    )
+    args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     student = ResNet18Segmentation(num_classes=21)
     teacher = fcn_resnet50(pretrained=True)
@@ -148,13 +189,18 @@ def main():
     ])
 
     train_dataset = VOCSegmentation('./data', image_set='train', transform=transformations, target_transform=mask_transformations)
-    train_data = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+    train_data = DataLoader(train_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
     test_dataset = VOCSegmentation('./data', image_set='val', transform=transformations, target_transform=mask_transformations)
-    test_data = DataLoader(test_dataset, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+    test_data = DataLoader(test_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
     
     optimizer = optim.Adam(student.parameters(), lr=1e-3, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
-    loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=255)
+    if args.loss == 'response':
+        loss_fn = response_distillation
+    elif args.loss == 'feature':
+        loss_fn = feature_distillation
+    else:
+        loss_fn = torch.nn.CrossEntropyLoss()
 
 
     train(
@@ -164,7 +210,9 @@ def main():
             train=train_data,
             test=test_data,
             scheduler=scheduler,
-            device=device
+            device=device,
+            loss_fn=loss_fn,
+            epochs=args.e
             )
 
 

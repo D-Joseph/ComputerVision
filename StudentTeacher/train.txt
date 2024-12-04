@@ -1,0 +1,6 @@
+python train.py -e 30 -b 64 --loss feature
+
+python train.py -e 30 -b 64 --loss response
+
+python train.py -e 30 -b 64 --loss none
+
