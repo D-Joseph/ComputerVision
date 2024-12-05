@@ -12,7 +12,9 @@ from model import ResNet18Segmentation
 import numpy as np
 from torchvision import transforms
 import matplotlib.pyplot as plt
-
+from augmentations import get_train_augmentations, get_val_augmentations
+from segmentationDataset import SegmentationDataset
+import torch.nn.functional as F
 def train( **kwargs) -> None:
     """
     Train the model.
@@ -78,7 +80,7 @@ def train( **kwargs) -> None:
         with torch.no_grad():
             for imgs, lbls in kwargs['test']:
                 imgs = imgs.to(device=kwargs['device'])
-                lbls = lbls.to(device=kwargs['device'])
+                lbls = lbls.to(device=kwargs['device']).long()
 
                 s_logits = student(imgs)
                 t_logits = teacher(imgs)['out']
@@ -126,7 +128,7 @@ def train( **kwargs) -> None:
     print("Training completed in", round(elapsed_time, 2), "minutes")
     #time_filename = './outputs/training_time.txt'
 
-#TODO: Finish creating this new loss function
+
 def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
     ce_loss = CrossEntropyLoss(ignore_index=255)(s_logits, label)
     t_soft = torch.nn.functional.softmax(t_logits / temperature, dim=1)
@@ -138,20 +140,31 @@ def response_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 
 
     return alpha * ce_loss + beta * distillation_loss
 
-def feature_distillation(s_logits, t_logits, label, alpha = 0.5, temperature = 2):
-    ce_loss = CrossEntropyLoss(ignore_index=255)(s_logits, label)
+def feature_distillation(s_logits, t_logits, labels, alpha=0.5, temperature=2):
+    beta = 1 - alpha
+    # Cross-Entropy Loss (CE)
+    ce_loss = CrossEntropyLoss(ignore_index=255)(s_logits, labels)
+
+    # Align feature dimensions
     t_features = t_logits
     s_features = s_logits
     if s_features.shape != t_features.shape:
-        t_features = torch.nn.functional.interpolate(
-        t_features, size=s_features.shape[2:], mode='bilinear', align_corners=False
-    )
+        t_features = F.interpolate(
+            t_features, size=s_features.shape[2:], mode='bilinear', align_corners=False
+        )
 
-    distillation_loss = torch.nn.functional.mse_loss(s_features, t_features)
+    # MSE Loss (Feature-Level Distillation)
+    mse_loss = F.mse_loss(s_features, t_features)
 
-    beta = 1 - alpha
+    # Cosine Loss (Feature Direction Alignment)
+    s_features_flat = s_features.view(s_features.size(0), -1)  # Flatten spatial dimensions
+    t_features_flat = t_features.view(t_features.size(0), -1)
+    cosine_loss = 1 - F.cosine_similarity(s_features_flat, t_features_flat, dim=1).mean()
 
-    return alpha * ce_loss + beta * distillation_loss
+    # Combine losses with weights
+    loss = alpha * ce_loss + (1 - alpha - beta) * mse_loss + beta * cosine_loss
+
+    return loss
 
 def calculate_accuracy(logits, labels):
         preds = torch.argmax(logits, dim=1)  # Get predicted classes (N, H, W)
@@ -161,10 +174,11 @@ def calculate_accuracy(logits, labels):
 
 
 def main():
+    # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Train a model")
-    
     parser.add_argument('-e', metavar='epochs', type=int, help='Number of epochs', default=30)
     parser.add_argument('-b', metavar='batch_size', type=int, help='Batch size', default=32)
+    parser.add_argument('-d', metavar='data', type=str, help='data', default="data")
     parser.add_argument(
         '--loss', 
         choices=['response', 'feature', 'none'], 
@@ -172,48 +186,74 @@ def main():
         default='response'
     )
     args = parser.parse_args()
+
+    # Set device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Initialize student and teacher models
+
+    student_weights = './output/none/weights.pth'
     student = ResNet18Segmentation(num_classes=21)
-    teacher = fcn_resnet50(pretrained=True)
-    student = student.to(device)
-    teacher = teacher.to(device)
+    if os.path.exists(student_weights):
+        student.load_state_dict(torch.load(student_weights))
 
-    transformations = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-    ])
+    teacher_weights = './output/fcn_resnet50/weights_teacher.pth'
+    teacher = fcn_resnet50(weights=None, aux_loss=True)
+    teacher.load_state_dict(torch.load(teacher_weights))
+    student, teacher = student.to(device), teacher.to(device)
 
-    mask_transformations = transforms.Compose([
-        transforms.Resize((256, 256), interpolation=InterpolationMode.NEAREST),
-        transforms.Lambda(lambda x: torch.tensor(np.array(x, dtype=np.int64))),
-    ])
+    train_images_dir = f"{args.d}/VOCdevkit/VOC2012/JPEGImages"
+    train_masks_dir = f"{args.d}/VOCdevkit/VOC2012/SegmentationClass"
+    train_file_list = f"{args.d}/VOCdevkit/VOC2012/ImageSets/Segmentation/train.txt"
 
-    train_dataset = VOCSegmentation('./data', image_set='train', download=False, transform=transformations, target_transform=mask_transformations)
+    val_images_dir = f"{args.d}/VOCdevkit/VOC2012/JPEGImages"
+    val_masks_dir = f"{args.d}/VOCdevkit/VOC2012/SegmentationClass"
+    val_file_list = f"{args.d}/VOCdevkit/VOC2012/ImageSets/Segmentation/val.txt"
+
+    train_transform = get_train_augmentations()
+    val_transform = get_val_augmentations()
+
+    train_dataset = SegmentationDataset(
+        image_root=train_images_dir,
+        mask_root=train_masks_dir,
+        file_list=train_file_list,
+        transform=train_transform
+    )
+
+    val_dataset = SegmentationDataset(
+        image_root=val_images_dir,
+        mask_root=val_masks_dir,
+        file_list=val_file_list,
+        transform=val_transform
+    )
+    # Create dataloaders
     train_data = DataLoader(train_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
-    test_dataset = VOCSegmentation('./data', image_set='val', download=False, transform=transformations, target_transform=mask_transformations)
-    test_data = DataLoader(test_dataset, batch_size=args.b, shuffle=True, num_workers=4, pin_memory=True)
-    
+    val_data = DataLoader(val_dataset, batch_size=args.b, shuffle=False, num_workers=4, pin_memory=True)
+
+    # Define optimizer and scheduler
     optimizer = optim.Adam(student.parameters(), lr=1e-3, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
+    # Define loss function
     if args.loss == 'response':
         loss_fn = response_distillation
     elif args.loss == 'feature':
         loss_fn = feature_distillation
     else:
-        loss_fn = CrossEntropyLoss(ignore_index=255) 
+        loss_fn = CrossEntropyLoss(ignore_index=255)
 
-
+    # Train the model
     train(
-            optimizer=optimizer,
-            student=student,
-            teacher=teacher,
-            train=train_data,
-            test=test_data,
-            scheduler=scheduler,
-            device=device,
-            loss_fn=loss_fn,
-            epochs=args.e
-            )
+        optimizer=optimizer,
+        student=student,
+        teacher=teacher,
+        train=train_data,
+        test=val_data,
+        scheduler=scheduler,
+        device=device,
+        loss_fn=loss_fn,
+        epochs=args.e
+    )
 
 
 

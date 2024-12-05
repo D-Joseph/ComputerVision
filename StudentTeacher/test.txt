@@ -1,0 +1,7 @@
+python test.py -w ./output/none/weights.pth
+
+python test.py -w ./output/feature/weights.pth
+
+python test.py -w ./output/response/weights.pth
+
+python test.py -w ./output/none/weight.pth

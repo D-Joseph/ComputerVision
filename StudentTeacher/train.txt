@@ -1,6 +1,9 @@
-python train.py -e 30 -b 64 --loss feature
+python train.py -e 30 -b 64 --loss feature -d data
 
-python train.py -e 30 -b 64 --loss response
+ppython train.py -e 30 -b 64 --loss response -d data
 
-python train.py -e 30 -b 64 --loss none
+python train.py -e 30 -b 64 --loss none -d data
+
+#train teacher 
+python trainTeacher.py -e 30 -b 32 -o ./output/fcn_resnet50 -d data
 
